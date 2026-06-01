@@ -3,4 +3,8 @@ startCommand = "npx prisma migrate deploy && npm start"
 healthcheckPath = "/health"
 healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"
+<<<<<<< HEAD
 restartPolicyMaxRetries = 10
+=======
+restartPolicyMaxRetries = 10
+>>>>>>> 04e0e7db971dba36e6626b240e887c85ad50efe0
