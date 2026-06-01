@@ -3,6 +3,7 @@ import axios from 'axios';
 import prisma from '../config/database';
 import agendaService from './agendaService';
 import jiraService from './jiraService';
+import { TaskStatus } from '@prisma/client';
 
 class TelegramBotService {
   private bot: TelegramBot | null = null;
@@ -291,29 +292,33 @@ class TelegramBotService {
 
         const [key, status] = parts;
         
-        // Map common status names to enum values and Jira statuses
-        const statusMap: Record<string, { enum: string; jira: string }> = {
-          'todo': { enum: 'TODO', jira: 'To Do' },
-          'to do': { enum: 'TODO', jira: 'To Do' },
-          'inprogress': { enum: 'IN_PROGRESS', jira: 'In Progress' },
-          'in progress': { enum: 'IN_PROGRESS', jira: 'In Progress' },
-          'in_progress': { enum: 'IN_PROGRESS', jira: 'In Progress' },
-          'done': { enum: 'DONE', jira: 'Done' },
-          'backlog': { enum: 'TODO', jira: 'Backlog' },
-          'review': { enum: 'IN_PROGRESS', jira: 'Review' },
-        };
-        
-        const mapped = statusMap[status.toLowerCase()] || { enum: status.toUpperCase().replace(/\s+/g, '_'), jira: status };
-        
-        const credentials = await jiraService.getUserCredentials(user);
-        if (!credentials) {
-          this.bot?.sendMessage(chatId, '❌ Jira credentials not configured. Please set up your Jira account.');
-          return;
-        }
+// Map common status names to enum values and Jira statuses
+const statusMap: Record<string, { enum: TaskStatus; jira: string }> = {
+  'todo': { enum: TaskStatus.TODO, jira: 'To Do' },
+  'to do': { enum: TaskStatus.TODO, jira: 'To Do' },
+  'inprogress': { enum: TaskStatus.IN_PROGRESS, jira: 'In Progress' },
+  'in progress': { enum: TaskStatus.IN_PROGRESS, jira: 'In Progress' },
+  'in_progress': { enum: TaskStatus.IN_PROGRESS, jira: 'In Progress' },
+  'done': { enum: TaskStatus.DONE, jira: 'Done' },
+  'backlog': { enum: TaskStatus.TODO, jira: 'Backlog' }, // Sesuaikan enum jika ada TaskStatus.BACKLOG di schema.prisma
+  'review': { enum: TaskStatus.IN_PROGRESS, jira: 'Review' },
+};
 
-        this.bot?.sendMessage(chatId, `⏳ Updating status for ${key} to ${mapped.jira}...`);
+// Berikan type casting 'as TaskStatus' untuk fallback string dinamis jika nama status tidak ada di map
+const mapped = statusMap[status.toLowerCase()] || { 
+  enum: status.toUpperCase().replace(/\s+/g, '_') as TaskStatus, 
+  jira: status 
+};
 
-        await jiraService.updateStatus(credentials, key, mapped.jira);
+const credentials = await jiraService.getUserCredentials(user);
+if (!credentials) {
+  this.bot?.sendMessage(chatId, '❌ Jira credentials not configured. Please set up your Jira account.');
+  return;
+}
+
+this.bot?.sendMessage(chatId, `⏳ Updating status for ${key} to ${mapped.jira}...`);
+
+await jiraService.updateStatus(credentials, key, mapped.jira);
 
         // Update local DB if task exists
         await prisma.task.updateMany({
