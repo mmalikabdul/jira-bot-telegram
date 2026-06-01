@@ -1,0 +1,90 @@
+# ==========================================
+# ENVIRONMENT VARIABLES (SENSITIVE!)
+# ==========================================
+.env
+.env.local
+.env.production
+.env.staging
+.env.development
+.env.test
+.env.*.local
+.env.*.production
+
+# Explicit paths untuk memastikan tidak ada .env yang lolos
+backend/.env
+backend/.env.*
+frontend/.env
+frontend/.env.*
+**/.env
+**/.env.*
+
+# ==========================================
+# DEPENDENCIES
+# ==========================================
+node_modules/
+.pnp
+.pnp.js
+.yarn-integrity
+.yarn-cache
+
+# ==========================================
+# BUILD OUTPUTS
+# ==========================================
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# ==========================================
+# LOGS
+# ==========================================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
+
+# ==========================================
+# OS FILES
+# ==========================================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+
+# ==========================================
+# IDE / EDITOR
+# ==========================================
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# ==========================================
+# PRISMA
+# ==========================================
+backend/prisma/migrations/
+backend/src/generated/
+
+# ==========================================
+# COVERAGE
+# ==========================================
+coverage/
+.nyc_output/
+
+# ==========================================
+# CACHES
+# ==========================================
+.cache/
+.parcel-cache/
+.turbo/
+
+# ==========================================
+# GIT HOOKS (if using husky)
+# ==========================================
+.husky/_/

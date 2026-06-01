@@ -1,0 +1,223 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(USER)
+  
+  // Telegram Integration
+  telegramChatId String? @unique
+  telegramUsername String?
+  
+  // Jira Integration (per-user credentials)
+  jiraEmail     String?  @unique
+  jiraApiToken  String?
+  jiraHost      String?
+  jiraAccountId String?  // Jira account ID for the user
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  tasks     Task[]
+  agendas   Agenda[]
+  assignedAgendas Agenda[] @relation("AgendaAssignee")
+  
+  @@map("users")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model Task {
+  id          String     @id @default(uuid())
+  title       String
+  description String?
+  status      TaskStatus @default(BACKLOG)
+  priority    Priority   @default(MEDIUM)
+  jiraId      String?    @unique
+  jiraKey     String?
+  estimatedHours Float?
+  actualHours    Float?
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  agendas     Agenda[]
+  tags        TaskTag[]
+  
+  @@map("tasks")
+  @@index([userId])
+  @@index([status])
+  @@index([jiraId])
+}
+
+enum TaskStatus {
+  BACKLOG
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Agenda {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  date        DateTime
+  startTime   String
+  endTime     String
+  notes       String?
+  completed   Boolean  @default(false)
+  
+  // Jira-like Fields
+  workType    AgendaWorkType @default(MEETING)
+  status      AgendaStatus   @default(TODO)
+  priority    Priority       @default(MEDIUM)
+  storyPoints Float?
+  sprint      String?
+  epic        String?
+  labels      String[]       @default([])
+  
+  // Assignment
+  assigneeId  String?
+  assignee    User?    @relation("AgendaAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  
+  // Google Calendar Integration
+  googleEventId String?  @unique
+  googleCalendarId String?
+  
+  // Recurring Event Support
+  isRecurring Boolean  @default(false)
+  recurrenceRule String? // RRULE format (e.g., "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR")
+  recurrenceEndDate DateTime?
+  parentEventId String? // For recurring event instances
+  
+  // Telegram Integration
+  createdVia  CreatedVia @default(WEB)
+  telegramMessageId String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  taskId      String?
+  task        Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  
+  @@map("agendas")
+  @@index([userId])
+  @@index([assigneeId])
+  @@index([date])
+  @@index([status])
+  @@index([googleEventId])
+  @@index([parentEventId])
+}
+
+enum AgendaWorkType {
+  MEETING
+  TASK
+  REVIEW
+  PLANNING
+  STANDUP
+  RETROSPECTIVE
+  OTHER
+}
+
+enum AgendaStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum CreatedVia {
+  WEB
+  TELEGRAM
+  API
+}
+
+model Tag {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  color     String    @default("#6B7280")
+  createdAt DateTime  @default(now())
+  
+  tasks     TaskTag[]
+  
+  @@map("tags")
+}
+
+model TaskTag {
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  
+  tagId     String
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  
+  @@id([taskId, tagId])
+  @@map("task_tags")
+}
+
+model JiraSync {
+  id          String   @id @default(uuid())
+  lastSync    DateTime @default(now())
+  status      String
+  message     String?
+  syncedCount Int      @default(0)
+  
+  @@map("jira_syncs")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  type      NotificationType
+  channel   NotificationChannel
+  message   String
+  sent      Boolean  @default(false)
+  sentAt    DateTime?
+  createdAt DateTime @default(now())
+  
+  @@map("notifications")
+  @@index([userId])
+  @@index([sent])
+}
+
+enum NotificationType {
+  TASK_REMINDER
+  DAILY_SUMMARY
+  JIRA_SYNC
+  DEADLINE_WARNING
+}
+
+enum NotificationChannel {
+  TELEGRAM
+  WHATSAPP
+  EMAIL
+}
