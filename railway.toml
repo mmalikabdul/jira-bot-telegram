@@ -1,6 +1,8 @@
+[nixpacks]
+root = "backend"
+
 [build]
 builder = "NIXPACKS"
-nixpacksPlan = { "phases" = { "install" = { "cmd" = "npm install" }, "build" = { "cmd" = "npx prisma generate && npm run build" } } }
 
 [deploy]
 startCommand = "npx prisma migrate deploy && npm start"
